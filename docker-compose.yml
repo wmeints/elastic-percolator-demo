@@ -1,4 +1,3 @@
-version: '2'
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:6.0.1
@@ -141,3 +140,26 @@ services:
       KAFKA_REST_BOOTSTRAP_SERVERS: 'broker:29092'
       KAFKA_REST_LISTENERS: "http://0.0.0.0:8082"
       KAFKA_REST_SCHEMA_REGISTRY_URL: 'http://schema-registry:8081'
+    
+  elastic:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.2
+    container_name: es01
+    environment:
+      - node.name=es01
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - 9200:9200
+  
+  api:
+    build: src/Api
+    container_name: api
+    ports:
+      - 5000:80
+  frontend:
+    build: src/Frontend
+    container_name: frontend
+    ports:
+      - 4200:80
+

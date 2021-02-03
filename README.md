@@ -16,11 +16,21 @@ You'll need the following tools to run the demo:
 To start the demo, execute the following command:
 
 ```
-docker-compose -f ./compose-elastic.yml -f ./compose-kafka.yml -f ./compose-app.yml up
+docker-compose up
 ```
+
 
 After all the containers are running you can open your browser and navigate to
 http://localhost:4200 to view and create streaming subscriptions for news items. 
+
+Before generating news items you need to setup a topic for it in Kafka.
+Use the following command to create the topic:
+
+```
+docker-compose exec broker kafka-topics --create --topic newsitems --bootstrap-server broker:9092 --partitions 1 --replication-factor 1
+```
+
+Once you have the topic ready, you can start to generate news items.
 
 To get news into the API, you can use the generator console application.
 Use the following command to generate a news item:
@@ -63,3 +73,15 @@ take the query that was created for the frontend and run it against the news
 item index that contains the news items we received before. The items that
 match the query are returned to the client so it has an initial set of news 
 items.
+
+## Project structure
+
+```
+└───src
+    ├───Api         # Contains the source code for the API
+    ├───Frontend    # Contains the source code for the frontend
+    └───Generator   # Contains the source code for the news generator
+```
+
+Please check the individual README files in the projects to learn more
+about the structure of each component.
