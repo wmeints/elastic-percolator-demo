@@ -1,0 +1,11 @@
+services:
+  api:
+    build: src/Api
+    container_name: api
+    ports:
+      - 5000:80
+  frontend:
+    build: src/Frontend
+    container_name: frontend
+    ports:
+      - 4200:80
