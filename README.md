@@ -13,34 +13,23 @@ You'll need the following tools to run the demo:
 
 ## Getting started
 
-To start the demo, execute the following command:
+To start the demo, first you need to start and configure the Kafka broker:
 
 ```
-docker-compose up
+docker-compose start zookeeper
+docker-compose start broker
 ```
-
-
-After all the containers are running you can open your browser and navigate to
-http://localhost:4200 to view and create streaming subscriptions for news items. 
-
-Before generating news items you need to setup a topic for it in Kafka.
 Use the following command to create the topic:
 
 ```
 docker-compose exec broker kafka-topics --create --topic newsitems --bootstrap-server broker:9092 --partitions 1 --replication-factor 1
 ```
 
-Once you have the topic ready, you can start to generate news items.
-
-To get news into the API, you can use the generator console application.
-Use the following command to generate a news item:
+After creating the topic, you can start the rest of the services using the following command:
 
 ```
-dotnet run src/Generator/Generator.csproj -- --title <some-title> --body <some-body> --tags a,b,c 
+docker-compose up
 ```
-
-The news item will be put on the Kafka topic for news items and 
-streamed to the correct subscription in the frontend.
 
 ## How it works
 
