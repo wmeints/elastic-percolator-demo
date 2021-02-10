@@ -68,7 +68,6 @@ items.
 ```
 └───src
     ├───Api         # Contains the source code for the API
-    ├───Frontend    # Contains the source code for the frontend
     └───Generator   # Contains the source code for the news generator
 ```
 
