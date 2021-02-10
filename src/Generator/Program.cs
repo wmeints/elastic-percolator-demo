@@ -1,4 +1,7 @@
 ﻿using Confluent.Kafka;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using System;
 using System.CommandLine;
 using System.CommandLine.Invocation;
@@ -7,47 +10,23 @@ using System.Threading.Tasks;
 
 namespace Generator
 {
-    class Program
+    partial class Program
     {
         static async Task Main(string[] args)
         {
-            var rootCommand = new RootCommand(description: "Generates a news item");
-            
-            rootCommand.AddOption(new Option("--title", description: "The title of the news item")
-            {
-                Argument = new Argument<string>(),
-                IsRequired = true
-            });
-
-            rootCommand.AddOption(new Option("--body", description: "The body of the news item")
-            {
-                Argument = new Argument<string>(),
-                IsRequired = true
-            });
-
-            rootCommand.Handler = CommandHandler.Create<string, string>(PublishMessage);
-
-            await rootCommand.InvokeAsync(args);
-        }
-
-        private static async Task PublishMessage(string title, string body)
-        {
-            var config = new ProducerConfig
-            {
-                BootstrapServers = "localhost:9092",
-                ClientId = "generator"
-            };
-
-            using (var producer = new ProducerBuilder<Null, string>(config).Build())
-            {
-                var messageBody = JsonSerializer.Serialize(new { title, body });
-                var message = new Message<Null, string>
+            var host = new HostBuilder()
+                .ConfigureServices(services =>
                 {
-                    Value = messageBody
-                };
+                    services.AddHostedService<MessageGeneratorService>();
+                })
+                .ConfigureLogging((ILoggingBuilder logging) =>
+                {
+                    logging.AddConsole();
+                })
+                .Build();
 
-                await producer.ProduceAsync("newsitems", message);
-            }
+
+            await host.RunAsync();
         }
     }
 }
