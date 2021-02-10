@@ -27,6 +27,11 @@ namespace Api.Services
                 query => query.Query(q => q.Percolate(p => p.Document(newsItem).Field(f => f.Query)))
             );
 
+            if (!response.IsValid)
+            {
+                throw new Exception($"Received invalid response: {response.ServerError.Error.Reason}");
+            }
+
             return response.Documents;
         }
     }

@@ -22,7 +22,7 @@ namespace Api
 
             services.AddScoped(ServiceProvider =>
             {
-                var nodeUri = new Uri("http://localhost:9200");
+                var nodeUri = new Uri("http://elastic:9200");
                 var settings = new ConnectionSettings(nodeUri);
                 var client = new ElasticClient(settings);
 
@@ -81,11 +81,19 @@ namespace Api
 
             if (!elasticClient.Indices.Exists("subscriptions").Exists)
             {
+                // PLEASE NOTE: We're mapping extra properties that belong to the news item here.
+                // This is needed for the percolator to actually work as specified. You need to make 
+                // sure that the types of the fields match the ones used in the original index!
                 elasticClient.Indices.Create("subscriptions", request =>
                 {
                     return request
                         .Map<NewsItemSubscription>(mm => mm
-                            .Properties(props => props.Percolator(x => x.Name(y => y.Query))))
+                            .Properties(props => props
+                                .Percolator(x => x.Name(y => y.Query))
+                                .Text(p=>p.Name("body"))
+                                .Text(p=>p.Name("title"))
+                            )
+                        )
                         .Settings(settings => settings
                             .NumberOfShards(1)
                             .NumberOfReplicas(1)

@@ -31,7 +31,7 @@ namespace Api.Services
 
             var config = new ConsumerConfig
             {
-                BootstrapServers = "localhost:9092",
+                BootstrapServers = "broker:9092",
                 AutoCommitIntervalMs = 500,
                 Acks = Acks.Leader,
                 GroupId = "api"
