@@ -19,16 +19,17 @@ To start the demo, first you need to start and configure the Kafka broker:
 docker-compose start zookeeper
 docker-compose start broker
 ```
-Use the following command to create the topic:
+Use the following command to create the topics:
 
 ```
-docker-compose exec broker kafka-topics --create --topic newsitems --bootstrap-server broker:9092 --partitions 1 --replication-factor 1
+docker-compose exec broker kafka-topics --create --topic raw-newsitems --bootstrap-server broker:9092 --partitions 1 --replication-factor 1
+docker-compose exec broker kafka-topics --create --topic enriched-newsitems --bootstrap-server broker:9092 --partitions 1 --replication-factor 1
 ```
 
 After creating the topic, you can start the rest of the services using the following command:
 
 ```
-docker-compose up
+docker-compose up -d
 ```
 
 ## How it works
@@ -44,11 +45,15 @@ the SignalR connection that the frontend uses for streaming data from the server
 
 ### Streaming news items
 
-When news items are published on to Kafka, they are picked up by the API. 
-The API sends the news item to the percolator index to find which query would
-match the news item. The ID of the matching query corresponds with the 
-SignalR connection that the client created, so we can find it and send the 
-news item to that connection.
+When news items are published to Kafka, they are picked up by the enricher.
+
+The enricher adds additional details to the news item. In this case, we've opted
+for a basic sentiment score using the Text Analytics service in Azure.
+
+After the item is enriched, it's sent to the API. The API sends the news item to 
+the percolator index to find which query would match the news item. The ID of 
+the matching query corresponds with the SignalR connection that the client 
+created, so we can find it and send the news item to that connection.
 
 News items that are received by the API are stored in a news item index so
 we can search through them at a later date should we encounter a client
@@ -68,8 +73,8 @@ items.
 ```
 └───src
     ├───Api         # Contains the source code for the API
-    └───Generator   # Contains the source code for the news generator
+    ├───Enricher    # Contains the source code for the Enricher
+    ├───Generator   # Contains the source code for the News generator
+    └───Messaging   # Contains generic messaging components
 ```
 
-Please check the individual README files in the projects to learn more
-about the structure of each component.
