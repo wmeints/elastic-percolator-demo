@@ -4,9 +4,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using Api.Models;
 using Api.Services;
+using Messaging;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Nest;
@@ -15,10 +17,21 @@ namespace Api
 {
     public class Startup
     {
+        private readonly IConfiguration _configuration;
+
+        public Startup(IConfiguration configuration)
+        {
+            _configuration = configuration;
+        }
+
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddHostedService<KafkaConsumerService>();
-            services.AddScoped<INewsItemEventHandler, NewsItemEventHandler>();
+            MessageConsumerOptions messageConsumerOptions = _configuration
+                .GetSection("Messaging")
+                .Get<MessageConsumerOptions>();
+
+            services.AddMessageConsumer<NewsItem>(messageConsumerOptions);
+            services.AddScoped<IMessageHandler<NewsItem>, NewsItemEventHandler>();
 
             services.AddScoped(ServiceProvider =>
             {
@@ -28,7 +41,7 @@ namespace Api
 
                 settings.DefaultMappingFor<NewsItem>(
                     x => x.IdProperty(x => x.Id).IndexName("newsitems"));
-                
+
                 settings.DefaultMappingFor<NewsItemSubscription>(
                     x => x.IdProperty(x => x.Id).IndexName("subscriptions"));
 
@@ -90,8 +103,8 @@ namespace Api
                         .Map<NewsItemSubscription>(mm => mm
                             .Properties(props => props
                                 .Percolator(x => x.Name(y => y.Query))
-                                .Text(p=>p.Name("body"))
-                                .Text(p=>p.Name("title"))
+                                .Text(p => p.Name("body"))
+                                .Text(p => p.Name("title"))
                             )
                         )
                         .Settings(settings => settings

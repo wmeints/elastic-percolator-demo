@@ -1,4 +1,5 @@
 ﻿using Confluent.Kafka;
+using Messaging;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
@@ -15,7 +16,7 @@ namespace Generator
     {
         private Thread _senderThread;
         private CancellationTokenSource _cancellationTokenSource;
-        private IProducer<Null, string> _producer;
+        private IMessagePublisher _messagePublisher;
         private Random _random;
 
         private ILogger<MessageGeneratorService> _logger;
@@ -32,8 +33,9 @@ namespace Generator
             "Hoogwater, sneeuw en ijs zitten de binnenvaart de afgelopen dagen flink dwars. Daarom verplaatsen binnenvaartschippers een deel van het transport naar de weg."
         };
 
-        public MessageGeneratorService(ILogger<MessageGeneratorService> logger)
+        public MessageGeneratorService(IMessagePublisher messagePublisher, ILogger<MessageGeneratorService> logger)
         {
+            _messagePublisher = messagePublisher;
             _logger = logger;
         }
 
@@ -58,44 +60,17 @@ namespace Generator
             while (!_cancellationTokenSource.IsCancellationRequested)
             {
                 var index = _random.Next(_titles.Length);
-                var messageId = PublishMessage(_titles[index], _bodies[index]).Result;
+                var message = new NewsItem(Guid.NewGuid(), _titles[index], _bodies[index]);
+                var publishTask = _messagePublisher.PublishAsync("raw-newsitems", message);
 
-                _logger.LogInformation("Published message {MessageId}", messageId);
+                publishTask.ConfigureAwait(false);
+                publishTask.Wait();
+
+                _logger.LogInformation("Published message {MessageId}", message.Id);
 
                 Thread.Sleep(1000);
             }
         }
 
-        private async Task<Guid> PublishMessage(string title, string body)
-        {
-            EnsureProducer();
-
-            var messageId = Guid.NewGuid();
-            var messageBody = JsonSerializer.Serialize(new NewsItem(messageId, title, body));
-            var message = new Message<Null, string>
-            {
-                Value = messageBody
-            };
-
-            await _producer.ProduceAsync("newsitems", message);
-
-            return messageId;
-        }
-
-        private void EnsureProducer()
-        {
-            if (_producer != null)
-            {
-                return;
-            }
-
-            var config = new ProducerConfig
-            {
-                BootstrapServers = "broker:9092",
-                ClientId = "generator"
-            };
-
-            _producer = new ProducerBuilder<Null, string>(config).Build();
-        }
     }
 }

@@ -47,6 +47,10 @@ services:
         context: .
         dockerfile: src/Api/Dockerfile
     container_name: api
+    environment:
+        MESSAGING__SERVERS: broker:9092
+        MESSAGING__TOPIC: raw-newsitems
+        MESSAGING__APPLICATIONID: api
     depends_on:
         - broker
         - elastic
@@ -57,6 +61,9 @@ services:
     build: 
         context: .
         dockerfile: src/Generator/Dockerfile
+    environment:
+        MESSAGING__SERVERS: broker:9092
+        MESSAGING__APPLICATIONID: generator
     container_name: generator
     depends_on:
         - broker

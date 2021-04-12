@@ -2,17 +2,13 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Api.Models;
+using Messaging;
 using Microsoft.Extensions.Logging;
 using Nest;
 
 namespace Api.Services
 {
-    public interface INewsItemEventHandler
-    {
-        Task HandleAsync(NewsItem item);
-    }
-
-    public class NewsItemEventHandler : INewsItemEventHandler
+    public class NewsItemEventHandler : IMessageHandler<NewsItem>
     {
         private readonly ILogger<NewsItemEventHandler> _logger;
         private readonly INewsItemRepository _newItemRepository;
@@ -51,6 +47,7 @@ namespace Api.Services
             foreach(var document in subscriptions)
             {
                 _logger.LogInformation("Found subscription {SubscriptionId}", document.Id);
+                //TODO: Publish the thing to the right subscription.
             }
         }
     }

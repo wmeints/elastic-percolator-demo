@@ -4,22 +4,24 @@ using System;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Api.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
+using System.Collections.Generic;
 
-namespace Api.Services
+namespace Messaging
 {
-    public class KafkaConsumerService : IHostedService
+    public class KafkaConsumerService<TMessage> : IHostedService
     {
         private Thread _receiverThread;
         private IConsumer<Null, string> _consumer;
-        private CancellationTokenSource _cancellationTokenSource;
-        private ILogger<KafkaConsumerService> _logger;
-        private IServiceProvider _serviceProvider;
+        private readonly CancellationTokenSource _cancellationTokenSource;
+        private readonly ILogger<KafkaConsumerService<TMessage>> _logger;
+        private readonly IServiceProvider _serviceProvider;
+        private readonly MessageConsumerOptions _options;
 
-        public KafkaConsumerService(ILogger<KafkaConsumerService> logger, IServiceProvider serviceProvider)
+        public KafkaConsumerService(MessageConsumerOptions options, ILogger<KafkaConsumerService<TMessage>> logger, IServiceProvider serviceProvider)
         {
+            _options = options;
             _logger = logger;
             _serviceProvider = serviceProvider;
             _cancellationTokenSource = new CancellationTokenSource();
@@ -27,14 +29,14 @@ namespace Api.Services
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Starting kafka consumer");
+            _logger.LogInformation("Starting kafka consumer for {Topic}", _options.Topic);
 
             var config = new ConsumerConfig
             {
-                BootstrapServers = "broker:9092",
-                AutoCommitIntervalMs = 500,
+                BootstrapServers = _options.Servers,
+                AutoCommitIntervalMs = 0,
                 Acks = Acks.Leader,
-                GroupId = "api"
+                GroupId = _options.ApplicationId
             };
 
             _consumer = new ConsumerBuilder<Null, string>(config).Build();
@@ -47,7 +49,7 @@ namespace Api.Services
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Stopping kafka consumer");
+            _logger.LogInformation("Stopping kafka consumer for {Topic}", _options.Topic);
 
             _cancellationTokenSource.Cancel();
             return Task.CompletedTask;
@@ -55,7 +57,7 @@ namespace Api.Services
 
         private void ReceiveLoop()
         {
-            _consumer.Subscribe("newsitems");
+            _consumer.Subscribe(_options.Topic);
 
             while (!_cancellationTokenSource.IsCancellationRequested)
             {
@@ -68,18 +70,18 @@ namespace Api.Services
                         continue;
                     }
                     
-                    _logger.LogInformation("Processing incoming message");
-
-                    var messageBody = JsonSerializer.Deserialize<NewsItem>(result.Message.Value);
+                    var messageBody = JsonSerializer.Deserialize<TMessage>(result.Message.Value);
 
                     using (var scope = _serviceProvider.CreateScope())
                     {
-                        var eventHandler = scope.ServiceProvider.GetRequiredService<INewsItemEventHandler>();
+                        var eventHandler = scope.ServiceProvider.GetRequiredService<IMessageHandler<TMessage>>();
                         var handlerTask = eventHandler.HandleAsync(messageBody);
 
                         handlerTask.ConfigureAwait(false);
                         handlerTask.Wait();
                     }
+
+                    _consumer.Commit(new[] { result.TopicPartitionOffset });
                 }
                 catch (Exception ex)
                 {
