@@ -49,7 +49,7 @@ services:
     container_name: api
     environment:
         MESSAGING__SERVERS: broker:9092
-        MESSAGING__TOPIC: raw-newsitems
+        MESSAGING__TOPIC: enriched-newsitems
         MESSAGING__APPLICATIONID: api
     depends_on:
         - broker
@@ -69,3 +69,19 @@ services:
         - broker
         - elastic
 
+  enricher:
+    build: 
+        context: .
+        dockerfile: src/Enricher/Dockerfile
+    environment:
+        CONSUMER__SERVERS: broker:9092
+        CONSUMER__APPLICATIONID: enricher
+        CONSUMER__TOPIC: raw-newsitems
+        PUBLISHER__SERVERS: broker:9092
+        PUBLISHER__APPLICATIONID: enricher
+        ANALYTICS__KEY: ${TEXTANALYTICS_KEY}
+        ANALYTICS__ENDPOINT: https://ta-elastic-percolator-demo-weu.cognitiveservices.azure.com/
+    container_name: enricher
+    depends_on:
+        - broker
+        - elastic
