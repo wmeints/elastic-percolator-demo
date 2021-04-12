@@ -4,7 +4,8 @@
       "commandName": "Project",
       "environmentVariables": {
         "MESSAGING__SERVERS": "localhost:9092",
-        "MESSAGING__APPLICATIONID": "generator"
+        "MESSAGING__APPLICATIONID": "generator",
+        "DOTNET_ENVIRONMENT": "Development"
       }
     }
   }

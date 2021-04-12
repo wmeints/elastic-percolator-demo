@@ -12,6 +12,9 @@
       "commandName": "IISExpress",
       "launchBrowser": true,
       "environmentVariables": {
+        "MESSAGING__SERVERS": "localhost:9092",
+        "MESSAGING__APPLICATIONID": "api",
+        "MESSAGING__TOPIC": "enriched-newsitems",
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },

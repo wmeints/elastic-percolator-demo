@@ -1,0 +1,15 @@
+{
+  "profiles": {
+    "Enricher": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "CONSUMER__TOPIC": "raw-newsitems",
+        "DOTNET_ENVIRONMENT": "Development",
+        "PUBLISHER__APPLICATIONID": "enricher",
+        "CONSUMER__SERVERS": "localhost:9092",
+        "PUBLISHER__SERVERS": "localhost:9092",
+        "CONSUMER__APPLICATIONID": "enricher"
+      }
+    }
+  }
+}
