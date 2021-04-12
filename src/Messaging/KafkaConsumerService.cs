@@ -85,7 +85,8 @@ namespace Messaging
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to process message");
+                    _logger.LogError(ex, "Failed to process message. Halting consumer loop for 30 seconds.");
+                    Thread.Sleep(TimeSpan.FromSeconds(30));
                 }
             }
         }
