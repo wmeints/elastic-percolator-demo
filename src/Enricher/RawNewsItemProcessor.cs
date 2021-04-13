@@ -31,12 +31,20 @@ namespace Enricher
             {
                 _logger.LogInformation("Enriched item {ItemId} with sentiment score.", messageBody.Id);
 
-                var enrichedNewsItem = new EnrichedNewsItem(messageBody.Id, messageBody.Title, messageBody.Body, operationResult.Result);
+                var enrichedNewsItem = new EnrichedNewsItem(
+                    messageBody.Id, 
+                    messageBody.Title, 
+                    messageBody.Body, 
+                    operationResult.Result);
+
                 await _messagePublisher.PublishAsync("enriched-newsitems", enrichedNewsItem);
             }
             else
             {
-                _logger.LogError(operationResult.FinalException, "Couldn't enrich news item {ItemId}. Moving item to the invalid-letter queue.", messageBody.Id);
+                _logger.LogError(
+                    operationResult.FinalException, 
+                    "Couldn't enrich news item {ItemId}. Moving item to the invalid-letter queue.", 
+                    messageBody.Id);
 
                 await _messagePublisher.PublishAsync("invalid-newsitems", new EnrichmentFailure
                 {
@@ -50,9 +58,14 @@ namespace Enricher
         {
             return Policy<SentimentScoringOutcome>
                 .Handle<Exception>()
-                .WaitAndRetryAsync(2, attempt => TimeSpan.FromMilliseconds(100), (outcome, timeout) => 
+                .CircuitBreakerAsync(2, TimeSpan.FromMinutes(1), (outcome, timeout)=> 
                 {
-                    _logger.LogWarning("The operation failed. Retrying in {Timeout} ms", timeout.TotalMilliseconds);
+                    _logger.LogWarning(
+                        "Maximum number of failure events encountered. Opening circuitbreaker for {Timeout} minutes.", 
+                        timeout.TotalMinutes);
+                }, () => 
+                {
+                    _logger.LogInformation("Circuit breaker closed.");
                 });
         }
 
